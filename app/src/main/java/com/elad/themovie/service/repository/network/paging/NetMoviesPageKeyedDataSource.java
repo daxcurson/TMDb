@@ -32,16 +32,16 @@ public class NetMoviesPageKeyedDataSource extends PageKeyedDataSource<String, Mo
 
     private static final String TAG = NetMoviesPageKeyedDataSource.class.getSimpleName();
     private final MoviesAPIInterface moviesService;
-    private final MutableLiveData networkState;
+    private final MutableLiveData<NetworkState> networkState;
     private final ReplaySubject<Movie> moviesObservable;
 
     NetMoviesPageKeyedDataSource() {
         moviesService = TheMovieDBAPIClient.getClient();
-        networkState = new MutableLiveData();
+        networkState = new MutableLiveData<>();
         moviesObservable = ReplaySubject.create();
     }
 
-    public MutableLiveData getNetworkState() {
+    public MutableLiveData<NetworkState> getNetworkState() {
         return networkState;
     }
 
@@ -57,8 +57,9 @@ public class NetMoviesPageKeyedDataSource extends PageKeyedDataSource<String, Mo
         Call<ArrayList<Movie>> callBack = moviesService.getMovies(API_KEY, LANGUAGE, 1);
         callBack.enqueue(new Callback<ArrayList<Movie>>() {
             @Override
-            public void onResponse(Call<ArrayList<Movie>> call, Response<ArrayList<Movie>> response) {
+            public void onResponse(@NonNull Call<ArrayList<Movie>> call, @NonNull Response<ArrayList<Movie>> response) {
                 if (response.isSuccessful()) {
+                    assert response.body() != null;
                     callback.onResult(response.body(), Integer.toString(1), Integer.toString(2));
                     networkState.postValue(NetworkState.LOADED);
                     response.body().forEach(moviesObservable::onNext);
@@ -69,7 +70,7 @@ public class NetMoviesPageKeyedDataSource extends PageKeyedDataSource<String, Mo
             }
 
             @Override
-            public void onFailure(Call<ArrayList<Movie>> call, Throwable t) {
+            public void onFailure(@NonNull Call<ArrayList<Movie>> call, @NonNull Throwable t) {
                 String errorMessage;
                 if (t.getMessage() == null) {
                     errorMessage = "unknown error";
@@ -97,8 +98,9 @@ public class NetMoviesPageKeyedDataSource extends PageKeyedDataSource<String, Mo
         Call<ArrayList<Movie>> callBack = moviesService.getMovies(API_KEY, LANGUAGE,page.get());
         callBack.enqueue(new Callback<ArrayList<Movie>>() {
             @Override
-            public void onResponse(Call<ArrayList<Movie>> call, Response<ArrayList<Movie>> response) {
+            public void onResponse(@NonNull Call<ArrayList<Movie>> call, @NonNull Response<ArrayList<Movie>> response) {
                 if (response.isSuccessful()) {
+                    assert response.body() != null;
                     callback.onResult(response.body(),Integer.toString(page.get()+1));
                     networkState.postValue(NetworkState.LOADED);
                     response.body().forEach(moviesObservable::onNext);
@@ -109,7 +111,7 @@ public class NetMoviesPageKeyedDataSource extends PageKeyedDataSource<String, Mo
             }
 
             @Override
-            public void onFailure(Call<ArrayList<Movie>> call, Throwable t) {
+            public void onFailure(@NonNull Call<ArrayList<Movie>> call, @NonNull Throwable t) {
                 String errorMessage;
                 if (t.getMessage() == null) {
                     errorMessage = "unknown error";

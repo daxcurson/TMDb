@@ -21,12 +21,22 @@ public class MoviesRepository {
     private static MoviesRepository instance;
     final private MoviesNetwork network;
     final private MoviesDatabase database;
-    final private MediatorLiveData liveDataMerger;
+    final private MediatorLiveData<PagedList<Movie>> liveDataMerger;
 
     private MoviesRepository(Context context) {
 
         NetMoviesDataSourceFactory dataSourceFactory = new NetMoviesDataSourceFactory();
 
+        PagedList.BoundaryCallback<Movie> boundaryCallback = new PagedList.BoundaryCallback<Movie>() {
+            @Override
+            public void onZeroItemsLoaded() {
+                super.onZeroItemsLoaded();
+                liveDataMerger.addSource(database.getMovies(), value -> {
+                    liveDataMerger.setValue(value);
+                    liveDataMerger.removeSource(database.getMovies());
+                });
+            }
+        };
         network = new MoviesNetwork(dataSourceFactory, boundaryCallback);
         database = MoviesDatabase.getInstance(context.getApplicationContext());
         // when we get new movies from net we set them into the database
@@ -39,22 +49,10 @@ public class MoviesRepository {
         // save the movies into db
         dataSourceFactory.getMovies().
                 observeOn(Schedulers.io()).
-                subscribe(movie -> {
-                    database.movieDao().insertMovie(movie);
-                });
+                subscribe(movie -> database.movieDao().insertMovie(movie));
 
     }
 
-    private PagedList.BoundaryCallback<Movie> boundaryCallback = new PagedList.BoundaryCallback<Movie>() {
-        @Override
-        public void onZeroItemsLoaded() {
-            super.onZeroItemsLoaded();
-            liveDataMerger.addSource(database.getMovies(), value -> {
-                liveDataMerger.setValue(value);
-                liveDataMerger.removeSource(database.getMovies());
-            });
-        }
-    };
     public static MoviesRepository getInstance(Context context){
         if(instance == null){
             instance = new MoviesRepository(context);

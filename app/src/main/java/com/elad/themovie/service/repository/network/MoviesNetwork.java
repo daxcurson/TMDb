@@ -1,7 +1,6 @@
 package com.elad.themovie.service.repository.network;
 
 
-import androidx.arch.core.util.Function;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Transformations;
 import androidx.paging.LivePagedListBuilder;
@@ -24,7 +23,6 @@ import static com.elad.themovie.Constants.NUMBERS_OF_THREADS;
 
 public class MoviesNetwork {
 
-    final private static String TAG = MoviesNetwork.class.getSimpleName();
     final private LiveData<PagedList<Movie>> moviesPaged;
     final private LiveData<NetworkState> networkState;
 
@@ -32,10 +30,9 @@ public class MoviesNetwork {
         PagedList.Config pagedListConfig = (new PagedList.Config.Builder()).setEnablePlaceholders(false)
                 .setInitialLoadSizeHint(LOADING_PAGE_SIZE).setPageSize(LOADING_PAGE_SIZE).build();
         networkState = Transformations.switchMap(dataSourceFactory.getNetworkStatus(),
-                (Function<NetMoviesPageKeyedDataSource, LiveData<NetworkState>>)
-                        NetMoviesPageKeyedDataSource::getNetworkState);
+                NetMoviesPageKeyedDataSource::getNetworkState);
         Executor executor = Executors.newFixedThreadPool(NUMBERS_OF_THREADS);
-        LivePagedListBuilder livePagedListBuilder = new LivePagedListBuilder(dataSourceFactory, pagedListConfig);
+        LivePagedListBuilder<String,Movie> livePagedListBuilder = new LivePagedListBuilder<>(dataSourceFactory, pagedListConfig);
         moviesPaged = livePagedListBuilder.
                 setFetchExecutor(executor).
                 setBoundaryCallback(boundaryCallback).
